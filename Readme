@@ -1,0 +1,7 @@
+# Universal Dotfile Preprocessor
+
+This is a tool to allow you to generalize your config files (.vimrc, .bash_profile, etc) to all of your computers by using a preprocessor similar to the C preprocessor to generate outputs specific to each machine and update them in place (if configured). This is written as a bash script to make it easier to use when setting up a new system as most *nix systems have some form of bash or bash-like shell.
+
+## What is this for
+
+If you are a power user on any *nix system you will inevidebly end up adjusting configurations for popular programs like vim, emacs, and even your shell. However if you have several different systems you may need slightly different configs on each system, possibly even in different places. A common practice for handling this problem has been to create configs, than when necissary, attempt to identify their environment and adjust what configs get set. This can be at times slow, unreliable, or even impossible. The goal of this project is to enable people to make easier to read, and easier to write configs.
