@@ -15,11 +15,15 @@ help() {
   echo 'Command Help'
 }
 
+#$1 line to check
+#$2 regex to match comment
 is_comment() {
   local regex="##.*$2"
   [[ $1 =~ $regex ]]
 }
 
+#$1 line to read
+#$2 target
 read_line() {
   local raw_regex="$2=(.+)$"
   local regex="#$raw_regex"
@@ -31,6 +35,7 @@ read_line() {
   return 1
 }
 
+#$1 line to check for globals
 read_globals() {
   for global in "${!globals[@]}"; do
     if out=$(read_line "$1" "$global"); then
@@ -77,6 +82,7 @@ debug_repl() {
   echo "Interactive debugging not implemented in this release"
 }
 
+#$1 line to check for debug statements
 debug_line() {
   local regex="#\\?(..)\\?#"
   if [[ $1 =~ $regex ]]; then
