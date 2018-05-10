@@ -24,10 +24,11 @@ is_comment() {
 
 #$1 line to read
 #$2 target
+#$3 target preamble
 read_line() {
   local raw_regex="$2=(.+)$"
-  local regex="#$raw_regex"
-  local comment_regex="#?$raw_regex"
+  local regex="$3$raw_regex"
+  local comment_regex="(?:$3)?$raw_regex"
   if ! (is_comment "$1" "$comment_regex") && [[ $1 =~ $regex ]]; then
     echo "${BASH_REMATCH[1]}"
     return 0
@@ -38,7 +39,7 @@ read_line() {
 #$1 line to check for globals
 read_globals() {
   for global in "${!globals[@]}"; do
-    if out=$(read_line "$1" "$global"); then
+    if out=$(read_line "$1" "$global" "#"); then
       globals[$global]=$out
     fi
   done
