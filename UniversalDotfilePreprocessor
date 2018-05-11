@@ -4,7 +4,8 @@
 # Engine Variables #
 ####################
 
-engine_state="loading"
+engine_state="loading program"
+engine_interactive=1 #enabled or disables the debugging REPL
 
 ####################
 # Global Variables #
@@ -66,6 +67,11 @@ echo_processor_state() {
 
 echo_engine() {
   echo "Engine State: $engine_state"
+  if [[ $engine_interactive -eq 0 ]]; then
+    echo "Engine in non-interactive mode. REPL unavailable"
+  else
+    echo "Engine in interactive mode. REPL available"
+  fi
 }
 
 debug_state() {
@@ -89,16 +95,33 @@ help_udp() {
   echo "echo_engine - dumps current engine information"
   echo "echo_globals - dumps all set global variables"
   echo "echo_processor_state - dumps all pre/postprocessor variables"
+  echo
+  echo "exit - exit interactive debugging"
 }
 
 debug_repl() {
-  echo "Interactive debugging not implemented in this release"
+  if [[ $engine_interactive -ne 1 ]]; then
+    echo "Interactive debugging not available during engine state \"$engine_state\""
+  else
+    echo "Entering interactive debugging"
+    echo
+    help_udp
+    echo
+    while true; do
+      read -rp "UDP$ " command
+      if [[ $command =~ "exit" ]]; then
+        echo "Exiting prompt"
+        return 0
+      fi
+      eval "$command"
+    done
+  fi
 }
 
 #$1 line to check for debug statements
 debug_line() {
   local regex="#\\?(..)\\?# ?(.*)"
-  if [[ $1 =~ $regex ]]; then
+  if ! is_comment "$1" "$regex" && [[ $1 =~ $regex ]]; then
     case ${BASH_REMATCH[1]} in
       'DS')
         debug_state
@@ -154,10 +177,17 @@ file=()
 
 # This will load in the file line by line while looking for global variables
 
-engine_state="load globals"
+engine_state="load file"
+engine_interactive=0
 while IFS= read -r line
 do
-  debug_line "$line"
-  read_globals "$line"
   file+=("$line")
+  debug_line "$line"
 done < "$1"
+
+engine_state="load globals"
+engine_interactive=1
+for line in "${file[@]}"; do
+  read_globals "$line"
+  debug_line "$line"
+done
