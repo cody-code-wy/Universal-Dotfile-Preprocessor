@@ -15,6 +15,21 @@ engine_no_process_depth=0 #how deeply nested in a failing if statement are we?
 #Set defaults
 declare -A globals=( ["UDPComment"]="#" )
 
+#######################
+# Processor Variables #
+#######################
+
+declare -A processor=(
+  #Preprocessor Variables
+  ["scripts-enabled"]="1"
+  ["output-comments"]="None"
+  ["section-style"]="Line"
+  #Postprocessor Variables
+  ["output-location"]="./compiled configs/<#config-name#>"
+  ["output-rotation"]="0"
+  ["output-type"]="Mini"
+)
+
 #############
 # Functions #
 #############
@@ -64,6 +79,9 @@ echo_globals() {
 }
 
 echo_processor_state() {
+  for pkey in "${!processor[@]}"; do
+    echo "Processor \"$pkey\"=\"${processor[$pkey]}\""
+  done
 }
 
 echo_engine() {
@@ -91,6 +109,7 @@ help_udp() {
   echo "engine_interactive - 0/1. Stores if a REPL can be safely started"
   echo "engine_no_process_depth - Numeric. Stores how deeply nested into a failing if we are"
   echo "globals - Bash Associative Array. Stores all global variables"
+  echo "processor - Bash associative Arry. Stores current processor state"
   echo
   echo "Debugging Functions"
   echo
