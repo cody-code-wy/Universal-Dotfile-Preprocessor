@@ -6,6 +6,7 @@
 
 engine_state="loading program"
 engine_interactive=1 #enabled or disables the debugging REPL
+engine_no_process_depth=0 #how deeply nested in a failing if statement are we?
 
 ####################
 # Global Variables #
@@ -72,6 +73,7 @@ echo_engine() {
   else
     echo "Engine in interactive mode. REPL available"
   fi
+  echo "Engine no process depth=$engine_no_process_depth"
 }
 
 debug_state() {
@@ -86,6 +88,8 @@ help_udp() {
   echo "Variables"
   echo
   echo "engine_state - String. Stores current engine state"
+  echo "engine_interactive - 0/1. Stores if a REPL can be safely started"
+  echo "engine_no_process_depth - Numeric. Stores how deeply nested into a failing if we are"
   echo "globals - Bash Associative Array. Stores all global variables"
   echo
   echo "Debugging Functions"
@@ -122,6 +126,9 @@ debug_repl() {
 debug_line() {
   local regex="#\\?(..)\\?# ?(.*)"
   if ! is_comment "$1" "$regex" && [[ $1 =~ $regex ]]; then
+    if [[ $engine_no_process_depth -ne 0 ]]; then
+      echo "Debugging inside failed if statement!"
+    fi
     case ${BASH_REMATCH[1]} in
       'DS')
         debug_state
