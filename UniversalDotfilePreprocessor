@@ -1,6 +1,12 @@
 #!/bin/bash
 
 ####################
+# Engine Variables #
+####################
+
+engine_state="loading"
+
+####################
 # Global Variables #
 ####################
 
@@ -56,10 +62,14 @@ echo_globals() {
 }
 
 echo_processor_state() {
-  echo "Processor has no state (not implemented)"
+}
+
+echo_engine() {
+  echo "Engine State: $engine_state"
 }
 
 debug_state() {
+  echo_engine
   echo "Dumping Globals"
   echo_globals
   echo "Dumping Processor State"
@@ -69,12 +79,14 @@ debug_state() {
 help_udp() {
   echo "Variables"
   echo
+  echo "engine_state - String. Stores current engine state"
   echo "globals - Bash Associative Array. Stores all global variables"
   echo
   echo "Debugging Functions"
   echo
   echo "help_udp - display this help prompt"
   echo "debug_state - dumps entire process state"
+  echo "echo_engine - dumps current engine information"
   echo "echo_globals - dumps all set global variables"
   echo "echo_processor_state - dumps all pre/postprocessor variables"
 }
@@ -85,7 +97,7 @@ debug_repl() {
 
 #$1 line to check for debug statements
 debug_line() {
-  local regex="#\\?(..)\\?#"
+  local regex="#\\?(..)\\?# ?(.*)"
   if [[ $1 =~ $regex ]]; then
     case ${BASH_REMATCH[1]} in
       'DS')
@@ -101,6 +113,12 @@ debug_line() {
         ;;
       'DI')
         debug_repl
+        ;;
+      'DE')
+        echo_engine
+        ;;
+      'DM')
+        echo "Reached Mark ${BASH_REMATCH[2]} while in engine_state $engine_state"
         ;;
       *)
         echo "Unknown debug option \"${BASH_REMATCH[1]}\""
@@ -136,6 +154,7 @@ file=()
 
 # This will load in the file line by line while looking for global variables
 
+engine_state="load globals"
 while IFS= read -r line
 do
   debug_line "$line"
