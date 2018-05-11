@@ -185,6 +185,11 @@ do
   debug_line "$line"
 done < "$1"
 
+
+###################
+# Load globals in #
+###################
+
 engine_state="load globals"
 engine_interactive=1
 for line in "${file[@]}"; do
