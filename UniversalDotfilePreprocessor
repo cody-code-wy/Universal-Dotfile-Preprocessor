@@ -13,7 +13,10 @@ engine_no_process_depth=0 #how deeply nested in a failing if statement are we?
 ####################
 
 #Set defaults
-declare -A globals=( ["UDPComment"]="#" )
+declare -A globals=(
+  ["UDPComment"]="#"
+  ["UDPOutput"]="Mini"
+)
 
 #######################
 # Processor Variables #
@@ -27,7 +30,6 @@ declare -A processor=(
   #Postprocessor Variables
   ["output-location"]="./compiled configs/<#config-name#>"
   ["output-rotation"]="0"
-  ["output-type"]="Mini"
 )
 
 #############
@@ -106,6 +108,10 @@ output_enabled() {
 
 #$1 line to output as disabled
 output_disabled() {
+  local udp_no_output_regex="(?:Mini|Pico)"
+  if [[ ${globals["UDPOutput"]} =~ $udp_no_output_regex ]]; then
+    return 2
+  fi
   local commented_regex="^${globals["UDPComment"]}"
   if [[ $1 =~ $commented_regex ]]; then
     output+=("$1")
@@ -310,4 +316,38 @@ for line in "${file[@]}"; do
   fi
   output "$line"
   debug_line "$line"
+done
+
+###############
+# Output File #
+###############
+
+output_location="${processor["output-location"]}"
+comment_regex="^${globals["UDPComment"]}"
+udp_regex="#(\\?.+|.+=.+|[SI] .+|Required-commands .+)"
+
+for line in "${output[@]}"; do
+  case "${globals["UDPOutput"]}" in
+    "UDP")
+      echo "$line" >> "$output_location"
+      ;;
+    "Comment")
+      if [[ ! $line =~ $udp_regex ]]; then
+        echo "$line" >> "$output_location"
+      fi
+      ;;
+    "Mini")
+      if [[ ! $line =~ $udp_regex ]]; then
+        echo "$line" >> "$output_location"
+      fi
+      ;;
+    "Pico")
+      if [[ ! $line =~ $comment_regex ]]; then
+        echo "$line" >> "$output_location"
+      fi
+      ;;
+    *)
+      echo "Unknown UDPOutput type \"${globals["UDPOutput"]}\""
+      ;;
+  esac
 done
