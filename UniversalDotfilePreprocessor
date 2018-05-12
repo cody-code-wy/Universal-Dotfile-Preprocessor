@@ -103,6 +103,8 @@ debug_state() {
 }
 
 help_udp() {
+  echo "Current Engine State \"$engine_state\""
+  echo
   echo "Variables"
   echo
   echo "engine_state - String. Stores current engine state"
