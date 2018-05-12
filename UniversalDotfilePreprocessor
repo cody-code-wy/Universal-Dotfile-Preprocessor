@@ -69,6 +69,16 @@ read_globals() {
   done
 }
 
+#$1 line to check for processor vars
+read_processor() {
+  for pvar in "${!processor[@]}"; do
+    local out
+    if out=$(read_line "$1" "$pvar" "#@"); then
+      processor[$pvar]=$out
+    fi
+  done
+}
+
 ###############
 # Debug State #
 ###############
@@ -223,5 +233,26 @@ engine_state="load globals"
 engine_interactive=1
 for line in "${file[@]}"; do
   read_globals "$line"
+  debug_line "$line"
+done
+
+################
+# Process File #
+################
+
+engine_state="processing"
+for line in "${file[@]}"; do
+  if [[ $engine_no_process_depth -eq 0 ]]; then
+    read_processor "$line"
+  else
+    end_if_regex="#\\?\\?"
+    begin_if_regex="#\\?.+"
+    debug_regex="#?..?#"
+    if ! is_comment "$line" "$end_if_regex" && [[ $line =~ $end_if_regex ]]; then
+      : $((engine_no_process_depth --))
+    elif ! is_comment "$line" "$end_if_regex" && [[ ! $line =~ $debug_regex ]] && [[ $line =~ $begin_if_regex ]]; then
+      : $((engine_no_process_depth ++))
+    fi
+  fi
   debug_line "$line"
 done
