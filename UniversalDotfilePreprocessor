@@ -62,6 +62,7 @@ read_line() {
 #$1 line to check for globals
 read_globals() {
   for global in "${!globals[@]}"; do
+    local out
     if out=$(read_line "$1" "$global" "#"); then
       globals[$global]=$out
     fi
