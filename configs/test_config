@@ -1,7 +1,44 @@
-# #UDPComment=Comment 
-# #?DS?#
-# #?DG?#
-# #?DP?#
-## #?DI?#
-# #?DE?#
-# #?DM?# mark test
+# #UDPComment=#
+# #UDPOutput=UDP
+# #@output-location=./output
+# #@output-comments=Spaced
+# #@section-style=Box
+
+#S Scripts Enabled
+
+hostname is: <# hostname #>
+#@scripts-enabled=0
+scripts are off! <# hostname #>
+#@scripts-enabled=1
+
+#S System Conditional
+
+#?system=Linux
+probably enabled line
+#??
+
+#?system=Darwin
+probably OSX, hopefully PureDarwin
+sorry opendarwin users ;(
+#??
+
+#S hostname conditional
+
+#?hostname~arch
+possibly on an arch system?
+#??
+
+#S Arch Conditional
+
+#?arch~64
+Some kind of 64 system probably
+#?arch=x86_64
+#this form of nested if looks so ugly...
+x86_64 specifically!
+#??
+#??
+
+#S Baked in comments test
+
+# Baked in comment
+# these should show up enless the UDPOutput is Pico
