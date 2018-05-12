@@ -79,6 +79,59 @@ read_processor() {
   done
 }
 
+##########
+# Output #
+##########
+
+#$1 line to process insertions
+process_insertions() {
+  if [[ ${processor["scripts-enabled"]} = "0" ]]; then
+    echo "$line"
+    return 1
+  fi
+  local line=$1
+  local regex="^(.*)<#(.*)#>(.*)\$"
+  while [[ $line =~ $regex ]]; do
+    local evaled
+    evaled=$(eval "${BASH_REMATCH[2]}")
+    line="${BASH_REMATCH[1]}$evaled${BASH_REMATCH[3]}"
+  done
+  echo "$line"
+}
+
+#$1 line to output as enabled
+output_enabled() {
+  output+=("$1")
+}
+
+#$1 line to output as disabled
+output_disabled() {
+  local commented_regex="^${globals["UDPComment"]}"
+  if [[ $1 =~ $commented_regex ]]; then
+    output+=("$1")
+    return 1
+  fi
+  local chars_regex="Chars;?(.*)"
+  if [[ ${processor["output-comments"]} =~ "Spaced" ]]; then
+    output+=("${globals["UDPComment"]} $1")
+  elif [[ "${processor["output-comments"]}" =~ $chars_regex ]]; then
+    output+=("${globals["UDPComment"]}${BASH_REMATCH[1]}$1")
+  else # None or any invalid
+    output+=("${globals["UDPComment"]}$1")
+  fi
+}
+
+#$1 line to output
+output() {
+  if [[ $engine_no_process_depth -eq 0 ]]; then
+    local out
+    out=$(process_insertions "$1")
+    output_enabled "$out"
+  else
+    output_disabled "$1"
+  fi
+}
+
 ###############
 # Debug State #
 ###############
@@ -213,6 +266,7 @@ fi
 echo "Loading \"$1\""
 
 file=()
+output=()
 
 # This will load in the file line by line while looking for global variables
 
@@ -254,5 +308,6 @@ for line in "${file[@]}"; do
       : $((engine_no_process_depth ++))
     fi
   fi
+  output "$line"
   debug_line "$line"
 done
