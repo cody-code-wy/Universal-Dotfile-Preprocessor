@@ -351,6 +351,8 @@ output_location="${processor["output-location"]}"
 comment_regex="^${globals["UDPComment"]}"
 udp_regex="#(\\?.+|.+=.+|[SI] .+|Required-commands .+)"
 
+mkdir -p "$(dirname "$output_location")"
+
 for line in "${output[@]}"; do
   case "${globals["UDPOutput"]}" in
     "UDP")
