@@ -81,6 +81,73 @@ read_processor() {
   done
 }
 
+#$1 conditional
+#$2 comparator
+#$3 matcher
+ask_conditional() {
+  local answer
+  read -p "$1?: " -r answer
+  case $2 in
+    "=")
+      if [[ ! $answer = "$3" ]]; then
+        : $((engine_no_process_depth++))
+      fi
+      ;;
+    "~")
+      if [[ ! $answer =~ $3 ]]; then
+        : $((engine_no_process_depth++))
+      fi
+      ;;
+  esac
+}
+
+#$1 line to check for conditional
+read_conditional() {
+  local conditional_regex="#\\?([^=~]+)([=~])(.+)"
+  if [[ $1 =~ $conditional_regex ]]; then
+    local conditional="${BASH_REMATCH[1]}"
+    local comparator="${BASH_REMATCH[2]}"
+    local matcher="${BASH_REMATCH[3]}"
+    case "$conditional$comparator" in
+      "hostname=")
+        if [[ ! $(hostname) = "$matcher" ]]; then
+          : $((engine_no_process_depth++))
+        fi
+        ;;
+      "hostname~")
+        if [[ ! $(hostname) =~ $matcher ]]; then
+          : $((engine_no_process_depth++))
+        fi
+        ;;
+      "system=")
+        if [[ ! $(uname -s) = "$matcher" ]]; then
+          : $((engine_no_process_depth++))
+        fi
+        ;;
+      "system~")
+        if [[ ! $(uname -s) =~ $matcher ]]; then
+          : $((engine_no_process_depth++))
+        fi
+        ;;
+      "arch=")
+        if [[ ! $(uname -m) =~ $matcher ]]; then
+          : $((engine_no_process_depth++))
+        fi
+        ;;
+      "arch~")
+        if [[ ! $(uname -m) =~ $matcher ]]; then
+          : $((engine_no_process_depth++))
+        fi
+        ;;
+      *)
+        local ask_regex="ask (.+)"
+        if [[ $conditional =~ $ask_regex ]]; then
+          ask_conditional "${BASH_REMATCH[1]}" "$comparator" "$matcher"
+        fi
+        ;;
+    esac
+  fi
+}
 
 #################
 # File Rotation #
@@ -327,6 +394,7 @@ engine_state="processing"
 for line in "${file[@]}"; do
   if [[ $engine_no_process_depth -eq 0 ]]; then
     read_processor "$line"
+    read_conditional "$line"
   else
     end_if_regex="#\\?\\?"
     begin_if_regex="#\\?.+"
