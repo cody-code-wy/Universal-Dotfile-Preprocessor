@@ -1,6 +1,7 @@
 # #UDPComment=#
 # #UDPOutput=UDP
-# #@output-location=./output
+# #@output-location=./compiled/output
+# #@output-rotation=3
 # #@output-comments=Spaced
 # #@section-style=Box
 
@@ -11,6 +12,20 @@ hostname is: <# hostname #>
 scripts are off! <# hostname #>
 #@scripts-enabled=1
 
+#S hostname conditional
+
+#?hostname=william-arch
+my desktop!
+#??
+
+#?hostname~arch
+possibly on an arch system?
+#??
+
+#?hostname=not a valid hostname
+should be commented
+#??
+
 #S System Conditional
 
 #?system=Linux
@@ -18,14 +33,12 @@ probably enabled line
 #??
 
 #?system=Darwin
-probably OSX, hopefully PureDarwin
+probably OSX, possibly PureDarwin
 sorry opendarwin users ;(
 #??
 
-#S hostname conditional
-
-#?hostname~arch
-possibly on an arch system?
+#?system~.+n[ui]x$
+some kind of *nix system
 #??
 
 #S Arch Conditional
@@ -36,6 +49,20 @@ Some kind of 64 system probably
 #this form of nested if looks so ugly...
 x86_64 specifically!
 #??
+#??
+
+#?arch~arm
+some kind of arm system?
+#??
+
+#S Ask Conditional
+
+#?ask do you want to do something~^[yY]
+output?
+#??
+
+#?ask what is your name=william
+you are william!
 #??
 
 #S Baked in comments test
