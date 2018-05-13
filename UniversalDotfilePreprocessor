@@ -7,6 +7,8 @@
 engine_state="loading program"
 engine_interactive=1 #enabled or disables the debugging REPL
 engine_no_process_depth=0 #how deeply nested in a failing if statement are we?
+engine_file=()
+engine_output=()
 
 ####################
 # Global Variables #
@@ -32,12 +34,102 @@ declare -A processor=(
   ["output-rotation"]="0"
 )
 
-#############
-# Functions #
-#############
+###################
+# Engine Fuctions #
+###################
 
 help() {
   echo 'Command Help'
+}
+
+#$1 file to load into engine
+load_file(){
+  engine_state="load file"
+  engine_interactive=0
+
+  local line
+  while IFS= read -r line
+  do
+    engine_file+=("$line")
+    debug_line "$line"
+  done < "$1"
+}
+
+load_globals(){
+  engine_state="load globals"
+  engine_interactive=1
+
+  local line
+  for line in "${engine_file[@]}"; do
+    read_globals "$line"
+    debug_line "$line"
+  done
+}
+
+preprocessor(){
+  engine_state="preprocessor"
+  engine_interactive=1
+
+  local line
+  for line in "${engine_file[@]}"; do
+    if [[ $engine_no_process_depth -eq 0 ]]; then
+      read_processor "$line"
+      read_conditional "$line"
+      debug_line "$line"
+    else
+      end_if_regex="#\\?\\?"
+      begin_if_regex="#\\?.+"
+      debug_regex="#?..?#"
+      if ! is_comment "$line" "$end_if_regex" && [[ $line =~ $end_if_regex ]]; then
+        : $((engine_no_process_depth --))
+      elif ! is_comment "$line" "$end_if_regex" && [[ ! $line =~ $debug_regex ]] && [[ $line =~ $begin_if_regex ]]; then
+        : $((engine_no_process_depth ++))
+      fi
+      debug_line "$line"
+    fi
+    output "$line"
+  done
+}
+
+postprocessor(){
+  engine_state="postprocessor"
+  engine_interactive=1
+
+  #make nice vars
+  local output_location="${processor["output-location"]}"
+  local comment_regex="^${globals["UDPComment"]}"
+  local udp_regex="#(\\?.+|.+=.+|[SI] .+|Required-commands .+)"
+
+  # File Operations
+  rotate_files
+  mkdir -p "$(dirname "$output_location")"
+
+  local line
+  for line in "${engine_output[@]}"; do
+    case "${globals["UDPOutput"]}" in
+      "UDP")
+        echo "$line" >> "$output_location"
+        ;;
+      "Comment")
+        if [[ ! $line =~ $udp_regex ]]; then
+          echo "$line" >> "$output_location"
+        fi
+        ;;
+      "Mini")
+        if [[ ! $line =~ $udp_regex ]]; then
+          echo "$line" >> "$output_location"
+        fi
+        ;;
+      "Pico")
+        if [[ ! $line =~ $comment_regex ]]; then
+          echo "$line" >> "$output_location"
+        fi
+        ;;
+      *)
+        echo "Unknown UDPOutput type \"${globals["UDPOutput"]}\""
+        ;;
+    esac
+  done
 }
 
 #$1 line to check
@@ -193,7 +285,7 @@ process_insertions() {
 
 #$1 line to output as enabled
 output_enabled() {
-  output+=("$1")
+  engine_output+=("$1")
 }
 
 #$1 line to output as disabled
@@ -204,16 +296,16 @@ output_disabled() {
   fi
   local commented_regex="^${globals["UDPComment"]}"
   if [[ $1 =~ $commented_regex ]]; then
-    output+=("$1")
+    engine_output+=("$1")
     return 1
   fi
   local chars_regex="Chars;?(.*)"
   if [[ ${processor["output-comments"]} =~ "Spaced" ]]; then
-    output+=("${globals["UDPComment"]} $1")
+    engine_output+=("${globals["UDPComment"]} $1")
   elif [[ "${processor["output-comments"]}" =~ $chars_regex ]]; then
-    output+=("${globals["UDPComment"]}${BASH_REMATCH[1]}$1")
+    engine_output+=("${globals["UDPComment"]}${BASH_REMATCH[1]}$1")
   else # None or any invalid
-    output+=("${globals["UDPComment"]}$1")
+    engine_output+=("${globals["UDPComment"]}$1")
   fi
 }
 
@@ -355,92 +447,11 @@ if [[ ! -f $1 ]]; then
   exit 12
 fi
 
-################
-# Load file in #
-################
+########
+# Main #
+########
 
-file=()
-output=()
-
-# This will load in the file line by line while looking for global variables
-
-engine_state="load file"
-engine_interactive=0
-while IFS= read -r line
-do
-  file+=("$line")
-  debug_line "$line"
-done < "$1"
-
-
-###################
-# Load globals in #
-###################
-
-engine_state="load globals"
-engine_interactive=1
-for line in "${file[@]}"; do
-  read_globals "$line"
-  debug_line "$line"
-done
-
-################
-# Process File #
-################
-
-engine_state="processing"
-for line in "${file[@]}"; do
-  if [[ $engine_no_process_depth -eq 0 ]]; then
-    read_processor "$line"
-    read_conditional "$line"
-  else
-    end_if_regex="#\\?\\?"
-    begin_if_regex="#\\?.+"
-    debug_regex="#?..?#"
-    if ! is_comment "$line" "$end_if_regex" && [[ $line =~ $end_if_regex ]]; then
-      : $((engine_no_process_depth --))
-    elif ! is_comment "$line" "$end_if_regex" && [[ ! $line =~ $debug_regex ]] && [[ $line =~ $begin_if_regex ]]; then
-      : $((engine_no_process_depth ++))
-    fi
-  fi
-  output "$line"
-  debug_line "$line"
-done
-
-###############
-# Output File #
-###############
-
-rotate_files
-
-output_location="${processor["output-location"]}"
-comment_regex="^${globals["UDPComment"]}"
-udp_regex="#(\\?.+|.+=.+|[SI] .+|Required-commands .+)"
-
-mkdir -p "$(dirname "$output_location")"
-
-for line in "${output[@]}"; do
-  case "${globals["UDPOutput"]}" in
-    "UDP")
-      echo "$line" >> "$output_location"
-      ;;
-    "Comment")
-      if [[ ! $line =~ $udp_regex ]]; then
-        echo "$line" >> "$output_location"
-      fi
-      ;;
-    "Mini")
-      if [[ ! $line =~ $udp_regex ]]; then
-        echo "$line" >> "$output_location"
-      fi
-      ;;
-    "Pico")
-      if [[ ! $line =~ $comment_regex ]]; then
-        echo "$line" >> "$output_location"
-      fi
-      ;;
-    *)
-      echo "Unknown UDPOutput type \"${globals["UDPOutput"]}\""
-      ;;
-  esac
-done
+load_file "$1"
+load_globals
+preprocessor
+postprocessor
