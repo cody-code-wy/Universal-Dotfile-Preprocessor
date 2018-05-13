@@ -34,6 +34,34 @@ declare -A processor=(
   ["output-rotation"]="0"
 )
 
+##################
+# User Variables #
+##################
+
+declare -A user_vars=()
+
+#########################
+# Convenience Functions #
+#    For  Scripting     #
+#########################
+
+#$1 named user variable
+get_user(){
+  echo "${user_vars["$1"]}"
+}
+
+get_global(){
+  echo "${processor["$1"]}"
+}
+
+get_processor(){
+  echo "${processor["$1"]}"
+}
+
+config-name(){
+  echo "${user_vars["config-name"]}"
+}
+
 ###################
 # Engine Fuctions #
 ###################
@@ -53,6 +81,8 @@ load_file(){
     engine_file+=("$line")
     debug_line "$line"
   done < "$1"
+
+  user_vars["config-name"]=$(basename "$1")
 }
 
 load_globals(){
