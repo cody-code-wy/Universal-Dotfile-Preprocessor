@@ -359,8 +359,6 @@ fi
 # Load file in #
 ################
 
-echo "Loading \"$1\""
-
 file=()
 output=()
 
