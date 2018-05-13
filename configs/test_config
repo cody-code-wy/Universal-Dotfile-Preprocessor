@@ -1,6 +1,6 @@
 # #UDPComment=#
 # #UDPOutput=UDP
-# #@output-location=./compiled/output
+# #@output-location=./compiled/<#config-name#>-<#date +%y\ %b\ %d\ %H:%M#>
 # #@output-rotation=3
 # #@output-comments=Spaced
 # #@section-style=Box
