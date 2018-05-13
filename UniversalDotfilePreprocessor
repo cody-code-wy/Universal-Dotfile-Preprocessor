@@ -81,6 +81,29 @@ read_processor() {
   done
 }
 
+
+#################
+# File Rotation #
+#################
+
+rotate_files() {
+  local n="${processor["output-rotation"]}"
+  if [[ $n != 0 ]]; then
+    if [ -f "${processor["output-location"]}" ]; then
+      mv "${processor["output-location"]}" "${processor["output-location"]}0"
+    fi
+  else
+    if [ -f "${processor["output-location"]}" ]; then
+      rm "${processor["output-location"]}" #just get rid of it
+    fi
+  fi
+  while [[ $((n-- > 0)) = 1 ]]; do
+    if [ -f "${processor["output-location"]}$n" ]; then
+      mv "${processor["output-location"]}$n" "${processor["output-location"]}$((n+1))"
+    fi
+  done
+}
+
 ##########
 # Output #
 ##########
@@ -321,6 +344,8 @@ done
 ###############
 # Output File #
 ###############
+
+rotate_files
 
 output_location="${processor["output-location"]}"
 comment_regex="^${globals["UDPComment"]}"
