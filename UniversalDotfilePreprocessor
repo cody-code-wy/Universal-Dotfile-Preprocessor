@@ -70,6 +70,12 @@ help() {
   echo 'Command Help'
 }
 
+compile_processor(){
+  for pvar in "${!processor[@]}"; do
+    processor[$pvar]=$(process_insertions "${processor[$pvar]}")
+  done
+}
+
 #$1 file to load into engine
 load_file(){
   engine_state="load file"
@@ -83,6 +89,7 @@ load_file(){
   done < "$1"
 
   user_vars["config-name"]=$(basename "$1")
+  compile_processor
 }
 
 load_globals(){
@@ -94,6 +101,7 @@ load_globals(){
     read_globals "$line"
     debug_line "$line"
   done
+  compile_processor
 }
 
 preprocessor(){
@@ -103,7 +111,7 @@ preprocessor(){
   local line
   for line in "${engine_file[@]}"; do
     if [[ $engine_no_process_depth -eq 0 ]]; then
-      read_processor "$line"
+      read_processor "$line" && compile_processor
       read_conditional "$line"
       debug_line "$line"
     else
@@ -293,9 +301,9 @@ rotate_files() {
   done
 }
 
-##########
-# Output #
-##########
+#############
+# Scripting #
+#############
 
 #$1 line to process insertions
 process_insertions() {
@@ -312,6 +320,10 @@ process_insertions() {
   done
   echo "$line"
 }
+
+##########
+# Output #
+##########
 
 #$1 line to output as enabled
 output_enabled() {
