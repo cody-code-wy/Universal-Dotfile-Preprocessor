@@ -62,6 +62,18 @@ config-name(){
   echo "${user_vars["config-name"]}"
 }
 
+#$1 0 or 1
+#$2 0 or 1
+xor(){
+  local left=false; [[ $1 = "0" ]] && left=true
+  local right=false; [[ $2 = "0" ]] && right=true
+  if ($left || $right) && ! ($left && $right) then
+    return 0
+  else
+    return 1
+  fi
+}
+
 ###################
 # Engine Fuctions #
 ###################
@@ -211,71 +223,108 @@ read_processor() {
   done
 }
 
-#$1 conditional
+#Regex for all conditionals
+comparator_regex="!?([=~])"
+
+#$1 arguments
 #$2 comparator
 #$3 matcher
 ask_conditional() {
   local answer
   read -p "$1?: " -r answer
-  case $2 in
+  [[ $2 =~ "!" ]]; local not=$?
+  [[ $2 =~ $comparator_regex ]]
+  case ${BASH_REMATCH[1]} in
     "=")
-      if [[ ! $answer = "$3" ]]; then
+      [[ ! $answer = "$3" ]]; local match=$?
+      if xor $match $not; then
         : $((engine_no_process_depth++))
       fi
       ;;
     "~")
-      if [[ ! $answer =~ $3 ]]; then
+      [[ ! $answer =~ $3 ]]; local match=$?
+      if xor $match $not; then
         : $((engine_no_process_depth++))
       fi
       ;;
   esac
 }
 
+#$1 arguments
+#$2 comparator
+#$3 matcher
+hostname_conditional(){
+  [[ $2 =~ "!" ]]; local not=$?
+  [[ $2 =~ $comparator_regex ]]
+  case ${BASH_REMATCH[1]} in
+    "=")
+      [[ ! $(hostname) = "$3" ]]; local match=$?
+      if xor $match $not; then
+        : $((engine_no_process_depth++))
+      fi
+      ;;
+    "~")
+      [[ ! $(hostname) =~ $3 ]]; local match=$?
+      if xor $match $not; then
+        : $((engine_no_process_depth++))
+      fi
+  esac
+}
+
+#$1 arguments
+#$2 comparator
+#$3 matcher
+system_conditional(){
+  [[ $2 =~ "!" ]]; local not=$?
+  [[ $2 =~ $comparator_regex ]]
+  case ${BASH_REMATCH[1]} in
+    "=")
+      [[ ! $(uname) = "$3" ]]; local match=$?
+      if xor $match $not; then
+        : $((engine_no_process_depth++))
+      fi
+      ;;
+    "~")
+      [[ ! $(uname) =~ $3 ]]; local match=$?
+      if xor $match $not; then
+        : $((engine_no_process_depth++))
+      fi
+  esac
+}
+
+#$1 arguments
+#$2 comparator
+#$3 matcher
+arch_conditional(){
+  [[ $2 =~ "!" ]]; local not=$?
+  [[ $2 =~ $comparator_regex ]]
+  case ${BASH_REMATCH[1]} in
+    "=")
+      [[ ! $(uname -m) = "$3" ]]; local match=$?
+      if xor $match $not; then
+        : $((engine_no_process_depth++))
+      fi
+      ;;
+    "~")
+      [[ ! $(uname -m) =~ $3 ]]; local match=$?
+      if xor $match $not; then
+        : $((engine_no_process_depth++))
+      fi
+  esac
+}
+
 #$1 line to check for conditional
 read_conditional() {
-  local conditional_regex="#\\?([^=~]+)([=~])(.+)"
+  local conditional_regex="#\\?([^=~! ]+) ?([^=~!]*)(!?[=~])(.+)"
   if [[ $1 =~ $conditional_regex ]]; then
     local conditional="${BASH_REMATCH[1]}"
-    local comparator="${BASH_REMATCH[2]}"
-    local matcher="${BASH_REMATCH[3]}"
-    case "$conditional$comparator" in
-      "hostname=")
-        if [[ ! $(hostname) = "$matcher" ]]; then
-          : $((engine_no_process_depth++))
-        fi
-        ;;
-      "hostname~")
-        if [[ ! $(hostname) =~ $matcher ]]; then
-          : $((engine_no_process_depth++))
-        fi
-        ;;
-      "system=")
-        if [[ ! $(uname -s) = "$matcher" ]]; then
-          : $((engine_no_process_depth++))
-        fi
-        ;;
-      "system~")
-        if [[ ! $(uname -s) =~ $matcher ]]; then
-          : $((engine_no_process_depth++))
-        fi
-        ;;
-      "arch=")
-        if [[ ! $(uname -m) =~ $matcher ]]; then
-          : $((engine_no_process_depth++))
-        fi
-        ;;
-      "arch~")
-        if [[ ! $(uname -m) =~ $matcher ]]; then
-          : $((engine_no_process_depth++))
-        fi
-        ;;
-      *)
-        local ask_regex="ask (.+)"
-        if [[ $conditional =~ $ask_regex ]]; then
-          ask_conditional "${BASH_REMATCH[1]}" "$comparator" "$matcher"
-        fi
-        ;;
-    esac
+    local arguments="${BASH_REMATCH[2]}"
+    local comparator="${BASH_REMATCH[3]}"
+    local matcher="${BASH_REMATCH[4]}"
+
+    if declare -f -F "$conditional"_conditional > /dev/null; then
+      "$conditional"_conditional "$arguments" "$comparator" "$matcher"
+    fi
   fi
 }
 

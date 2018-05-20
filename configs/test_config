@@ -61,8 +61,16 @@ some kind of arm system?
 output?
 #??
 
+#?ask do you want this commented!~^[yY]
+Your wish is my command
+#??
+
 #?ask what is your name=william
 you are william!
+#??
+
+#?ask don't say yes!=yes
+Darn You
 #??
 
 #S Baked in comments test
